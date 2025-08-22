@@ -12,7 +12,8 @@ export default function SignInPage() {
 
   const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
-  const [loading, setLoading] = useState<"email" | "github" | "google" | "dev" | null>(null);
+  const [loading, setLoading] =
+    useState<"email" | "github" | "google" | "dev" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleEmailSignIn(e: React.FormEvent) {
@@ -54,7 +55,9 @@ export default function SignInPage() {
     setError(null);
     setLoading(provider);
     try {
-      const url = `/api/auth/oauth/${provider}?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+      const url = `/api/auth/oauth/${provider}?callbackUrl=${encodeURIComponent(
+        callbackUrl
+      )}`;
       window.location.replace(url);
     } catch {
       setError("Could not initiate OAuth. Try again.");
@@ -62,10 +65,16 @@ export default function SignInPage() {
     }
   }
 
-  // Temporary dev override: bypass auth and go straight to /main
+  /**  Dev override:
+   *  - Set a temporary non-HttpOnly cookie `sid` so middleware treats the user as authenticated.
+   *  - Redirect straight to /main (replace to avoid back button showing /auth).
+   *  - Remove this in production.
+   */
   function handleDevLogin() {
     setLoading("dev");
-    router.push("/main");
+    // 1 day expiry; SameSite=Lax; Path=/ so middleware sees it on all routes
+    document.cookie = `sid=dev-local; Path=/; Max-Age=86400; SameSite=Lax`;
+    router.replace("/main");
   }
 
   return (
