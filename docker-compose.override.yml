@@ -1,0 +1,22 @@
+# Docker Compose override for development
+# This file is automatically loaded by docker-compose and provides development-specific configurations
+
+version: '3.8'
+
+services:
+  backend:
+    environment:
+      NODE_ENV: production
+
+  frontend:
+    environment:
+      NODE_ENV: production
+
+  postgres:
+    ports:
+      - "5433:5432"  # Expose postgres port for development tools
+
+# Development-specific volumes
+volumes:
+  postgres_data:
+  nginx_ssl:
