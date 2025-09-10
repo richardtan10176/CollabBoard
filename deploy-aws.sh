@@ -112,7 +112,8 @@ setup_environment() {
     echo "  - NEXT_PUBLIC_API_URL: Set your domain (e.g., https://yourdomain.com)"
     echo "  - NEXT_PUBLIC_WS_URL: Set your domain (e.g., https://yourdomain.com)"
     echo ""
-    read -p "Press Enter after editing .env file..."
+    echo "Press Enter after editing .env file..."
+    read
 }
 
 # Setup SSL certificates
@@ -120,7 +121,8 @@ setup_ssl() {
     print_status "Setting up SSL certificates..."
     
     # Get domain from user
-    read -p "Enter your domain name (e.g., yourdomain.com): " DOMAIN
+    echo "Enter your domain name (e.g., yourdomain.com): "
+    read DOMAIN
     
     if [ -z "$DOMAIN" ]; then
         print_error "Domain name is required"
@@ -195,7 +197,8 @@ main() {
     deploy_app
     
     # Setup SSL (optional)
-    read -p "Do you want to setup SSL certificates now? (y/n): " setup_ssl_choice
+    echo "Do you want to setup SSL certificates now? (y/n): "
+    read setup_ssl_choice
     if [[ $setup_ssl_choice =~ ^[Yy]$ ]]; then
         setup_ssl
         setup_ssl_renewal
