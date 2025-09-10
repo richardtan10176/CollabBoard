@@ -57,7 +57,7 @@ Client (HTTPS) → NGINX (443) → Next.js (3000) → Express API (3001) → Pos
    docker-compose -f docker-compose.yml up --build -d
    ```
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 CollabBoard/
