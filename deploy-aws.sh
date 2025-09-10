@@ -113,7 +113,7 @@ setup_environment() {
     echo "  - NEXT_PUBLIC_WS_URL: Set your domain (e.g., https://yourdomain.com)"
     echo ""
     echo "Press Enter after editing .env file..."
-    read
+    read -r
 }
 
 # Setup SSL certificates
