@@ -91,29 +91,21 @@ install_certbot() {
 
 # Setup environment file
 setup_environment() {
-    print_status "Setting up environment configuration..."
+    print_status "Checking environment configuration..."
     
     if [ ! -f .env ]; then
         if [ -f env.production ]; then
             cp env.production .env
             print_success "Created .env from env.production template"
+            print_warning "IMPORTANT: Please edit .env file with your production values before running deployment"
+            exit 1
         else
-            print_error "No env.production template found"
+            print_error "No .env file found. Please create one with your production configuration"
             exit 1
         fi
     else
-        print_warning ".env file already exists"
+        print_success ".env file found - assuming it's properly configured"
     fi
-    
-    print_warning "IMPORTANT: Please edit .env file with your production values:"
-    echo "  - DB_PASSWORD: Set a secure database password"
-    echo "  - JWT_SECRET: Set a strong secret key (at least 32 characters)"
-    echo "  - FRONTEND_URL: Set your domain (e.g., https://yourdomain.com)"
-    echo "  - NEXT_PUBLIC_API_URL: Set your domain (e.g., https://yourdomain.com)"
-    echo "  - NEXT_PUBLIC_WS_URL: Set your domain (e.g., https://yourdomain.com)"
-    echo ""
-    echo "Press Enter after editing .env file..."
-    read -r
 }
 
 # Setup SSL certificates
