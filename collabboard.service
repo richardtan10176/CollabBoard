@@ -1,0 +1,17 @@
+[Unit]
+Description=CollabBoard Application
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/ubuntu/CollabBoard
+ExecStart=/usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
+ExecStop=/usr/local/bin/docker-compose -f docker-compose.prod.yml down
+TimeoutStartSec=0
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
