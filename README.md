@@ -2,7 +2,9 @@
 
 A full-stack collaborative markdown editor with real-time editing, user authentication, and version history.
 
-## 🏗️ Architecture
+### CollabBoard is now LIVE!!! Visit [here](https://www.collabboard.xyz)
+
+##  Architecture
 
 CollabBoard consists of 4 Docker containers orchestrated with Docker Compose:
 
@@ -17,7 +19,7 @@ Client (HTTPS) → NGINX (443) → Next.js (3000) → Express API (3001) → Pos
                               WebSocket (Socket.io)
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 
@@ -57,7 +59,7 @@ Client (HTTPS) → NGINX (443) → Next.js (3000) → Express API (3001) → Pos
    docker-compose -f docker-compose.yml up --build -d
    ```
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 CollabBoard/
