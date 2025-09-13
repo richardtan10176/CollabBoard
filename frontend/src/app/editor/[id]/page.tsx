@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { documentsAPI } from '@/utils/api';
 import { Document } from '@/types';
 import DocumentEditor from '@/components/DocumentEditor';
+import SharingModal from '@/components/SharingModal';
 import toast from 'react-hot-toast';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
@@ -18,6 +19,11 @@ export default function EditorPage() {
   const [document, setDocument] = useState<Document | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sharingModal, setSharingModal] = useState<{ isOpen: boolean; documentId: string; documentTitle: string }>({
+    isOpen: false,
+    documentId: '',
+    documentTitle: ''
+  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -59,6 +65,24 @@ export default function EditorPage() {
     if (document) {
       setDocument(prev => prev ? { ...prev, current_content: content } : null);
     }
+  };
+
+  const handleShareClick = () => {
+    if (document) {
+      setSharingModal({
+        isOpen: true,
+        documentId: document.id,
+        documentTitle: document.title
+      });
+    }
+  };
+
+  const closeSharingModal = () => {
+    setSharingModal({
+      isOpen: false,
+      documentId: '',
+      documentTitle: ''
+    });
   };
 
   if (authLoading || !user) {
@@ -134,8 +158,17 @@ export default function EditorPage() {
         <DocumentEditor 
           document={document} 
           onContentChange={handleContentChange}
+          onShareClick={handleShareClick}
         />
       </div>
+
+      {/* Sharing Modal */}
+      <SharingModal
+        isOpen={sharingModal.isOpen}
+        onClose={closeSharingModal}
+        documentId={sharingModal.documentId}
+        documentTitle={sharingModal.documentTitle}
+      />
     </div>
   );
 }

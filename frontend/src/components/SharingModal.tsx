@@ -124,60 +124,63 @@ const SharingModal: React.FC<SharingModalProps> = ({ isOpen, onClose, documentId
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-gray-800 border-gray-600">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-white">Share Document</h3>
+    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-0 border w-full max-w-lg shadow-2xl rounded-lg bg-gray-800 border-gray-600">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-gray-600">
+          <h3 className="text-xl font-medium text-white">Share "{documentTitle}"</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white"
+            className="text-gray-400 hover:text-white transition-colors"
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
         </div>
 
-        <div className="mb-4">
-          <p className="text-sm text-gray-300 mb-4">
-            Share "{documentTitle}" with other users
-          </p>
+        <div className="p-6">
 
           {/* Share with new user */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Share with user
+              Add people and groups
             </label>
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleSearchChange}
-                placeholder="Search by username or email..."
-                className="w-full px-3 py-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Enter email or username..."
+                className="w-full px-4 py-3 border border-gray-600 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
               />
               
               {showSearchResults && searchResults.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                   {searchResults.map((user) => (
                     <div
                       key={user.id}
-                      className="px-3 py-2 hover:bg-gray-600 cursor-pointer flex items-center justify-between"
+                      className="px-4 py-3 hover:bg-gray-600 cursor-pointer flex items-center justify-between border-b border-gray-600 last:border-b-0"
                       onClick={() => handleShare(user)}
                     >
-                      <div>
-                        <div className="text-white font-medium">{user.username}</div>
-                        <div className="text-gray-400 text-sm">{user.email}</div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                          {user.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="text-white font-medium">{user.username}</div>
+                          <div className="text-gray-400 text-sm">{user.email}</div>
+                        </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         <select
                           value={selectedPermission}
                           onChange={(e) => setSelectedPermission(e.target.value as 'read' | 'write')}
-                          className="text-xs bg-gray-600 text-white border border-gray-500 rounded px-2 py-1"
+                          className="text-sm bg-gray-600 text-white border border-gray-500 rounded px-3 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <option value="read">Read</option>
-                          <option value="write">Write</option>
+                          <option value="read">Viewer</option>
+                          <option value="write">Editor</option>
                         </select>
-                        <UserPlusIcon className="h-4 w-4 text-indigo-400" />
+                        <UserPlusIcon className="h-5 w-5 text-blue-400" />
                       </div>
                     </div>
                   ))}
@@ -188,64 +191,48 @@ const SharingModal: React.FC<SharingModalProps> = ({ isOpen, onClose, documentId
 
           {/* Current shares */}
           <div>
-            <h4 className="text-md font-medium text-white mb-3">Current shares</h4>
+            <h4 className="text-md font-medium text-gray-300 mb-3">People with access</h4>
             
             {isLoading ? (
               <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
                 <p className="mt-2 text-gray-400">Loading shares...</p>
               </div>
             ) : shares.length === 0 ? (
               <div className="text-center py-4 text-gray-400">
                 <UserPlusIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No users have been shared with this document</p>
+                <p>No people have access to this document</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {shares.map((share) => (
                   <div
                     key={share.id}
-                    className="flex items-center justify-between p-3 bg-gray-700 rounded-md"
+                    className="flex items-center justify-between p-3 bg-gray-700 rounded-lg border border-gray-600"
                   >
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <div>
-                          <div className="text-white font-medium">{share.shared_with_username}</div>
-                          <div className="text-gray-400 text-sm">{share.shared_with_email}</div>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          {share.permission_type === 'read' ? (
-                            <EyeIcon className="h-4 w-4 text-blue-400" />
-                          ) : (
-                            <PencilIcon className="h-4 w-4 text-green-400" />
-                          )}
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            share.permission_type === 'read' 
-                              ? 'bg-blue-900 text-blue-300' 
-                              : 'bg-green-900 text-green-300'
-                          }`}>
-                            {share.permission_type}
-                          </span>
-                        </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                        {share.shared_with_username.charAt(0).toUpperCase()}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Shared by {share.shared_by_username} on {formatDate(share.created_at)}
+                      <div>
+                        <div className="text-white font-medium">{share.shared_with_username}</div>
+                        <div className="text-gray-400 text-sm">{share.shared_with_email}</div>
                       </div>
                     </div>
                     
                     <div className="flex items-center space-x-2">
                       <select
                         value={share.permission_type}
-                        onChange={(e) => handleUpdatePermission(share.id, share.shared_with_username, e.target.value as 'read' | 'write')}
-                        className="text-xs bg-gray-600 text-white border border-gray-500 rounded px-2 py-1"
+                        onChange={(e) => handleUpdatePermission(share.id, share.shared_with_user_id, e.target.value as 'read' | 'write')}
+                        className="text-sm bg-gray-600 text-white border border-gray-500 rounded px-3 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       >
-                        <option value="read">Read</option>
-                        <option value="write">Write</option>
+                        <option value="read">Viewer</option>
+                        <option value="write">Editor</option>
                       </select>
                       <button
-                        onClick={() => handleRevokeShare(share.id, share.shared_with_username, share.shared_with_username)}
-                        className="text-red-400 hover:text-red-300"
-                        title="Revoke access"
+                        onClick={() => handleRevokeShare(share.id, share.shared_with_user_id, share.shared_with_username)}
+                        className="text-red-400 hover:text-red-300 p-1"
+                        title="Remove access"
                       >
                         <TrashIcon className="h-4 w-4" />
                       </button>
@@ -257,12 +244,13 @@ const SharingModal: React.FC<SharingModalProps> = ({ isOpen, onClose, documentId
           </div>
         </div>
 
-        <div className="flex justify-end">
+        {/* Footer */}
+        <div className="flex justify-end p-6 border-t border-gray-600 bg-gray-700 rounded-b-lg">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600"
+            className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-600 border border-gray-500 rounded-md hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            Close
+            Done
           </button>
         </div>
       </div>

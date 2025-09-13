@@ -129,6 +129,7 @@ export interface DocumentShare {
   permission_type: 'read' | 'write';
   created_at: string;
   expires_at?: string;
+  shared_with_user_id: string;
   shared_with_username: string;
   shared_with_email: string;
   shared_by_username: string;

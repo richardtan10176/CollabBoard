@@ -141,6 +141,7 @@ const getDocumentShares = async (req, res) => {
         ds.permission_type,
         ds.created_at,
         ds.expires_at,
+        ds.shared_with_user_id,
         u.username as shared_with_username,
         u.email as shared_with_email,
         shared_by.username as shared_by_username
