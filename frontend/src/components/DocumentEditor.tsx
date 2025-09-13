@@ -15,6 +15,7 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isDocumentJoined, setIsDocumentJoined] = useState(false);
+  const [canWrite, setCanWrite] = useState(document.canWrite ?? true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -30,6 +31,7 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
       console.log('Document joined event received:', data);
       setContent(data.document.content);
       setIsDocumentJoined(true);
+      setCanWrite(data.canWrite ?? true);
       toast.success('Connected to document');
     },
     onTextChanged: (data: TextChangeEvent) => {
@@ -70,6 +72,11 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
 
   // Handle content changes
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!canWrite) {
+      toast.error('You have read-only access to this document');
+      return;
+    }
+
     const newContent = e.target.value;
     setContent(newContent);
     onContentChange?.(newContent);
@@ -145,6 +152,12 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
               {isSaving && (
                 <span className="text-sm text-blue-600">Saving...</span>
               )}
+              
+              {!canWrite && (
+                <span className="text-sm text-orange-500 font-medium">
+                  Read-only mode
+                </span>
+              )}
             </div>
           </div>
 
@@ -184,8 +197,11 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
             onChange={handleContentChange}
             onSelect={handleCursorMove}
             onKeyUp={handleCursorMove}
-            className="flex-1 w-full p-6 text-white bg-gray-800 placeholder-gray-400 border-none resize-none focus:outline-none font-mono text-sm leading-6"
-            placeholder="Start writing your markdown here..."
+            readOnly={!canWrite}
+            className={`flex-1 w-full p-6 text-white bg-gray-800 placeholder-gray-400 border-none resize-none focus:outline-none font-mono text-sm leading-6 ${
+              !canWrite ? 'cursor-not-allowed opacity-75' : ''
+            }`}
+            placeholder={canWrite ? "Start writing your markdown here..." : "You have read-only access to this document"}
             style={{ minHeight: '400px' }}
           />
         </div>

@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { documentsAPI } from '@/utils/api';
 import { Document } from '@/types';
 import toast from 'react-hot-toast';
-import { PlusIcon, DocumentTextIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, DocumentTextIcon, UserGroupIcon, ShareIcon } from '@heroicons/react/24/outline';
+import SharingModal from '@/components/SharingModal';
 
 export default function DashboardPage() {
   const { user, isLoading: authLoading, logout } = useAuth();
@@ -16,6 +17,11 @@ export default function DashboardPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
+  const [sharingModal, setSharingModal] = useState<{ isOpen: boolean; documentId: string; documentTitle: string }>({
+    isOpen: false,
+    documentId: '',
+    documentTitle: ''
+  });
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -77,6 +83,23 @@ export default function DashboardPage() {
 
   const handleDocumentClick = (documentId: string) => {
     router.push(`/editor/${documentId}`);
+  };
+
+  const handleShareClick = (e: React.MouseEvent, documentId: string, documentTitle: string) => {
+    e.stopPropagation();
+    setSharingModal({
+      isOpen: true,
+      documentId,
+      documentTitle
+    });
+  };
+
+  const closeSharingModal = () => {
+    setSharingModal({
+      isOpen: false,
+      documentId: '',
+      documentTitle: ''
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -229,11 +252,29 @@ export default function DashboardPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 flex items-center space-x-2">
+                      {doc.user_permission && doc.user_permission !== 'owner' && (
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          doc.user_permission === 'write' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {doc.user_permission === 'write' ? 'Write' : 'Read'}
+                        </span>
+                      )}
                       {doc.is_public && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Public
                         </span>
+                      )}
+                      {doc.isOwner && (
+                        <button
+                          onClick={(e) => handleShareClick(e, doc.id, doc.title)}
+                          className="p-1 text-gray-400 hover:text-indigo-400 transition-colors"
+                          title="Share document"
+                        >
+                          <ShareIcon className="h-4 w-4" />
+                        </button>
                       )}
                     </div>
                   </div>
@@ -243,6 +284,14 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      {/* Sharing Modal */}
+      <SharingModal
+        isOpen={sharingModal.isOpen}
+        onClose={closeSharingModal}
+        documentId={sharingModal.documentId}
+        documentTitle={sharingModal.documentTitle}
+      />
     </div>
   );
 }

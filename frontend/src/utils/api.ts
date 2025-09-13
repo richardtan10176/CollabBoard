@@ -7,7 +7,10 @@ import {
   DocumentsResponse, 
   DocumentResponse,
   Document,
-  VersionsResponse
+  VersionsResponse,
+  ShareRequest,
+  SharesResponse,
+  UsersSearchResponse
 } from '@/types';
 
 // Create axios instance
@@ -98,6 +101,34 @@ export const documentsAPI = {
 
   getDocumentVersions: async (id: string): Promise<VersionsResponse> => {
     const response: AxiosResponse<VersionsResponse> = await api.get(`/documents/${id}/versions`);
+    return response.data;
+  },
+};
+
+// Sharing API
+export const sharingAPI = {
+  searchUsers: async (query: string): Promise<UsersSearchResponse> => {
+    const response: AxiosResponse<UsersSearchResponse> = await api.get(`/sharing/users/search?q=${encodeURIComponent(query)}`);
+    return response.data;
+  },
+
+  shareDocument: async (documentId: string, data: ShareRequest) => {
+    const response = await api.post(`/sharing/documents/${documentId}/share`, data);
+    return response.data;
+  },
+
+  getDocumentShares: async (documentId: string): Promise<SharesResponse> => {
+    const response: AxiosResponse<SharesResponse> = await api.get(`/sharing/documents/${documentId}/shares`);
+    return response.data;
+  },
+
+  updateSharePermission: async (documentId: string, userId: string, permission: 'read' | 'write') => {
+    const response = await api.put(`/sharing/documents/${documentId}/shares/${userId}`, { permission });
+    return response.data;
+  },
+
+  revokeShare: async (documentId: string, userId: string) => {
+    const response = await api.delete(`/sharing/documents/${documentId}/shares/${userId}`);
     return response.data;
   },
 };

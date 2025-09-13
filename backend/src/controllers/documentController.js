@@ -1,27 +1,30 @@
 const { query } = require('../utils/database');
+const { 
+  checkDocumentPermission, 
+  canWriteToDocument, 
+  canReadDocument, 
+  getUserAccessibleDocuments 
+} = require('../utils/permissions');
 
 // Get all documents for the authenticated user
 const getDocuments = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const result = await query(`
-      SELECT 
-        d.id, 
-        d.title, 
-        d.created_at, 
-        d.updated_at, 
-        d.is_public,
-        u.username as owner_username,
-        (SELECT COUNT(*) FROM document_versions WHERE document_id = d.id) as version_count
-      FROM documents d
-      JOIN users u ON d.owner_id = u.id
-      WHERE d.owner_id = $1 OR d.is_public = true
-      ORDER BY d.updated_at DESC
-    `, [userId]);
+    const documents = await getUserAccessibleDocuments(userId);
 
     res.json({
-      documents: result.rows
+      documents: documents.map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        created_at: doc.created_at,
+        updated_at: doc.updated_at,
+        is_public: doc.is_public,
+        owner_username: doc.owner_username,
+        version_count: doc.version_count,
+        user_permission: doc.user_permission,
+        isOwner: doc.user_permission === 'owner'
+      }))
     });
   } catch (error) {
     console.error('Get documents error:', error);
@@ -37,6 +40,16 @@ const getDocument = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
+    // Check if user has access to the document
+    const { hasAccess, permission } = await checkDocumentPermission(userId, id);
+
+    if (!hasAccess) {
+      return res.status(404).json({
+        error: 'Document not found or access denied'
+      });
+    }
+
+    // Get document details
     const result = await query(`
       SELECT 
         d.id, 
@@ -49,24 +62,23 @@ const getDocument = async (req, res) => {
         u.username as owner_username
       FROM documents d
       JOIN users u ON d.owner_id = u.id
-      WHERE d.id = $1 AND (d.owner_id = $2 OR d.is_public = true)
-    `, [id, userId]);
+      WHERE d.id = $1
+    `, [id]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
-        error: 'Document not found or access denied'
+        error: 'Document not found'
       });
     }
 
     const document = result.rows[0];
 
-    // Check if user is currently editing
-    const isOwner = document.owner_id === userId;
-
     res.json({
       document: {
         ...document,
-        isOwner
+        user_permission: permission,
+        isOwner: permission === 'owner',
+        canWrite: permission === 'owner' || permission === 'write'
       }
     });
   } catch (error) {
@@ -128,15 +140,24 @@ const updateDocument = async (req, res) => {
     const { title, content, isPublic } = req.body;
     const userId = req.user.id;
 
-    // Check if document exists and user has permission
+    // Check if user can write to the document
+    const canWrite = await canWriteToDocument(userId, id);
+
+    if (!canWrite) {
+      return res.status(403).json({
+        error: 'You do not have permission to edit this document'
+      });
+    }
+
+    // Get current document for comparison
     const documentResult = await query(
-      'SELECT * FROM documents WHERE id = $1 AND owner_id = $2',
-      [id, userId]
+      'SELECT * FROM documents WHERE id = $1',
+      [id]
     );
 
     if (documentResult.rows.length === 0) {
       return res.status(404).json({
-        error: 'Document not found or access denied'
+        error: 'Document not found'
       });
     }
 
@@ -244,19 +265,9 @@ const getDocumentVersions = async (req, res) => {
     const userId = req.user.id;
 
     // Check if user has access to the document
-    const documentResult = await query(
-      'SELECT owner_id, is_public FROM documents WHERE id = $1',
-      [id]
-    );
+    const { hasAccess } = await checkDocumentPermission(userId, id);
 
-    if (documentResult.rows.length === 0) {
-      return res.status(404).json({
-        error: 'Document not found'
-      });
-    }
-
-    const document = documentResult.rows[0];
-    if (document.owner_id !== userId && !document.is_public) {
+    if (!hasAccess) {
       return res.status(403).json({
         error: 'Access denied'
       });

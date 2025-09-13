@@ -49,12 +49,27 @@ CREATE TABLE active_sessions (
     UNIQUE(document_id, user_id)
 );
 
+-- Document shares for granular permissions
+CREATE TABLE document_shares (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    shared_with_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    permission_type VARCHAR(10) NOT NULL CHECK (permission_type IN ('read', 'write')),
+    shared_by_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE(document_id, shared_with_user_id)
+);
+
 -- Indexes for better performance
 CREATE INDEX idx_documents_owner ON documents(owner_id);
 CREATE INDEX idx_documents_updated ON documents(updated_at DESC);
 CREATE INDEX idx_document_versions_document ON document_versions(document_id, version_number DESC);
 CREATE INDEX idx_active_sessions_document ON active_sessions(document_id);
 CREATE INDEX idx_active_sessions_user ON active_sessions(user_id);
+CREATE INDEX idx_document_shares_document ON document_shares(document_id);
+CREATE INDEX idx_document_shares_user ON document_shares(shared_with_user_id);
+CREATE INDEX idx_document_shares_permission ON document_shares(permission_type);
 
 -- Function to automatically update the updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -71,10 +86,11 @@ CREATE TRIGGER update_documents_updated_at
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
 
--- Insert a default admin user for testing (password: 'admin123')
--- Password hash generated using bcrypt with salt rounds = 10
+-- Insert default users for testing (password: 'admin123' and 'user123')
+-- Password hashes generated using bcrypt with salt rounds = 10
 INSERT INTO users (username, email, password_hash) VALUES 
-('admin', 'admin@collabboard.com', '$2a$10$U8/Id3SzoHRXv7MqxK90FOL3x2UGf7MVu49amFCRl9Rephq2rl8wy');
+('admin', 'admin@collabboard.com', '$2a$10$U8/Id3SzoHRXv7MqxK90FOL3x2UGf7MVu49amFCRl9Rephq2rl8wy'),
+('user', 'user@collabboard.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
 
 -- Insert a sample document
 INSERT INTO documents (title, owner_id, current_content) VALUES 
