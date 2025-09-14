@@ -5,7 +5,6 @@ import { useSocket } from '@/hooks/useSocket';
 import { Document, TextChangeEvent, CursorMoveEvent } from '@/types';
 import toast from 'react-hot-toast';
 import CursorOverlay from './CursorOverlay';
-import ActiveUsersDebug from './ActiveUsersDebug';
 
 interface DocumentEditorProps {
   document: Document;
@@ -35,15 +34,12 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
     saveDocument,
   } = useSocket({
     onDocumentJoined: (data) => {
-      console.log('Document joined event received:', data);
       setContent(data.document.content);
       setIsDocumentJoined(true);
       setCanWrite(data.canWrite ?? true);
       toast.success('Connected to document');
     },
     onTextChanged: (data: TextChangeEvent) => {
-      // Update content from other users
-      console.log('Received text change from:', data.user.username, 'Content length:', data.content.length);
       setIsReceivingRemoteChange(true);
       setContent(data.content);
       onContentChange?.(data.content);
@@ -64,12 +60,8 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
       toast(`${data.user.username} left the document`, { icon: '👋' });
     },
     onCursorMoved: (data: CursorMoveEvent) => {
-      // Handle cursor move from other users
-      console.log('DocumentEditor: Cursor moved by:', data.user.username, 'Position:', data.position);
       if ((window as any).__onCursorMoved) {
         (window as any).__onCursorMoved(data);
-      } else {
-        console.warn('DocumentEditor: __onCursorMoved handler not found');
       }
     },
     onSaveComplete: (data) => {
@@ -85,33 +77,26 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
   // Join document on mount
   useEffect(() => {
     if (document.id && isConnected && !hasJoinedDocumentRef.current) {
-      console.log('Attempting to join document:', document.id, 'Socket connected:', isConnected);
       hasJoinedDocumentRef.current = true;
       joinDocument(document.id);
-    } else if (document.id && !isConnected) {
-      console.log('Cannot join document - socket not connected. Document ID:', document.id, 'Connected:', isConnected);
     }
-  }, [document.id, isConnected]); // Removed joinDocument and leaveDocument from dependencies
+  }, [document.id, isConnected]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (document.id && hasJoinedDocumentRef.current) {
-        console.log('Leaving document:', document.id);
         hasJoinedDocumentRef.current = false;
         leaveDocument(document.id);
       }
     };
-  }, []); // Only run on unmount
+  }, []);
 
   // Set up global cursor move handler
   useEffect(() => {
     (window as any).__sendCursorMove = (position: number) => {
       if (isConnected) {
-        console.log('DocumentEditor: Sending cursor move, position:', position);
         sendCursorMove(document.id, position);
-      } else {
-        console.log('DocumentEditor: Not sending cursor move - not connected');
       }
     };
 
@@ -138,10 +123,7 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
 
     // Send real-time changes to other users
     if (isConnected) {
-      console.log('Sending text change:', { documentId: document.id, contentLength: newContent.length });
       sendTextChange(document.id, newContent);
-    } else {
-      console.log('Not sending text change - connected:', isConnected);
     }
 
     // Auto-save immediately on every change
@@ -159,7 +141,6 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
     if (!textareaRef.current || !isConnected) return;
 
     const position = textareaRef.current.selectionStart;
-    console.log('DocumentEditor: Local cursor moved to position:', position);
     
     // Throttle cursor updates (max 10 per second)
     if (cursorMoveTimeoutRef.current) {
@@ -167,7 +148,6 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
     }
     
     cursorMoveTimeoutRef.current = setTimeout(() => {
-      console.log('DocumentEditor: Sending throttled cursor move, position:', position);
       sendCursorMove(document.id, position);
     }, 100);
   };
@@ -337,12 +317,6 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
         </div>
       </div>
 
-      {/* Debug component */}
-      <ActiveUsersDebug 
-        activeUsers={activeUsers}
-        isConnected={isConnected}
-        currentDocumentId={document.id}
-      />
     </div>
   );
 };

@@ -41,7 +41,6 @@ const CursorOverlay: React.FC<CursorOverlayProps> = ({
   // Handle cursor move events
   useEffect(() => {
     const handleCursorMove = (data: CursorMoveEvent) => {
-      console.log('CursorOverlay: Received cursor move event:', data);
       setUserCursors(prev => {
         const newCursors = new Map(prev);
         newCursors.set(data.user.id, {
@@ -67,7 +66,6 @@ const CursorOverlay: React.FC<CursorOverlayProps> = ({
   useEffect(() => {
     if (onCursorMoved) {
       const handleCursorMove = (data: CursorMoveEvent) => {
-        console.log('CursorOverlay: Received cursor move via prop:', data);
         setUserCursors(prev => {
           const newCursors = new Map(prev);
           newCursors.set(data.user.id, {

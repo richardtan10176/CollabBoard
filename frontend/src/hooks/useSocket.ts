@@ -80,51 +80,39 @@ export const useSocket = ({
 
     // Connection event handlers
     newSocket.on('connect', () => {
-      console.log('Socket connected to server with ID:', newSocket.id);
       setIsConnected(true);
       
       // If there's a pending document to join, join it now
       if (pendingDocumentIdRef.current) {
-        console.log('Auto-joining pending document:', pendingDocumentIdRef.current);
         newSocket.emit('join-document', pendingDocumentIdRef.current);
         pendingDocumentIdRef.current = null;
       }
     });
 
-    newSocket.on('disconnect', (reason) => {
-      console.log('Socket disconnected from server. Reason:', reason);
+    newSocket.on('disconnect', () => {
       setIsConnected(false);
       setActiveUsers([]);
     });
 
-    newSocket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+    newSocket.on('connect_error', () => {
       setIsConnected(false);
     });
 
-    newSocket.on('reconnect', (attemptNumber) => {
-      console.log('Socket reconnected after', attemptNumber, 'attempts');
+    newSocket.on('reconnect', () => {
       setIsConnected(true);
-    });
-
-    newSocket.on('reconnect_error', (error) => {
-      console.error('Socket reconnection error:', error);
     });
 
     // Document collaboration event handlers
     newSocket.on('document-joined', (data: DocumentJoinedEvent) => {
-      console.log('Document joined:', data);
       setActiveUsers(data.activeUsers || []);
       onDocumentJoined?.(data);
     });
 
     newSocket.on('text-changed', (data: TextChangeEvent) => {
-      console.log('Text changed:', data);
       onTextChanged?.(data);
     });
 
     newSocket.on('user-joined', (data: UserJoinedEvent) => {
-      console.log('User joined:', data);
       setActiveUsers(prev => [...prev, {
         id: data.user.id,
         username: data.user.username,
@@ -134,23 +122,19 @@ export const useSocket = ({
     });
 
     newSocket.on('user-left', (data: UserLeftEvent) => {
-      console.log('User left:', data);
       setActiveUsers(prev => prev.filter(user => user.id !== data.user.id));
       onUserLeft?.(data);
     });
 
     newSocket.on('cursor-moved', (data: CursorMoveEvent) => {
-      console.log('Cursor moved:', data);
       onCursorMoved?.(data);
     });
 
     newSocket.on('save-complete', (data: SaveCompleteEvent) => {
-      console.log('Save complete:', data);
       onSaveComplete?.(data);
     });
 
     newSocket.on('error', (error: { message: string }) => {
-      console.error('Socket error:', error);
       onError?.(error);
     });
 
@@ -168,14 +152,8 @@ export const useSocket = ({
 
   const joinDocument = useCallback((documentId: string) => {
     if (socket && isConnected) {
-      console.log('Joining document:', documentId, 'Socket ID:', socket.id);
       socket.emit('join-document', documentId);
     } else {
-      console.warn('Cannot join document - socket not ready, storing for later:', { 
-        hasSocket: !!socket, 
-        isConnected, 
-        documentId 
-      });
       // Store the document ID to join when socket connects
       pendingDocumentIdRef.current = documentId;
     }
@@ -183,7 +161,6 @@ export const useSocket = ({
 
   const leaveDocument = useCallback((documentId: string) => {
     if (socket && isConnected) {
-      console.log('Leaving document:', documentId);
       socket.emit('leave-document', documentId);
     }
   }, [socket, isConnected]);
