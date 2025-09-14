@@ -91,7 +91,10 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
     } else if (document.id && !isConnected) {
       console.log('Cannot join document - socket not connected. Document ID:', document.id, 'Connected:', isConnected);
     }
+  }, [document.id, isConnected]); // Removed joinDocument and leaveDocument from dependencies
 
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
       if (document.id && hasJoinedDocumentRef.current) {
         console.log('Leaving document:', document.id);
@@ -99,7 +102,7 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
         leaveDocument(document.id);
       }
     };
-  }, [document.id, isConnected]); // Removed joinDocument and leaveDocument from dependencies
+  }, []); // Only run on unmount
 
   // Set up global cursor move handler
   useEffect(() => {

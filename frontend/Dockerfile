@@ -22,8 +22,9 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 # ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the application
-RUN chmod +x node_modules/.bin/* && npm run build
+# Build the application with memory optimization for small instances
+RUN chmod +x node_modules/.bin/* && \
+    NODE_OPTIONS="--max-old-space-size=1024" npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
