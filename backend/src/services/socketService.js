@@ -11,9 +11,10 @@ class SocketService {
         methods: ["GET", "POST"],
         credentials: true
       },
-      transports: ['polling'],
+      transports: ['polling', 'websocket'],
       pingTimeout: 20000,
-      pingInterval: 10000
+      pingInterval: 10000,
+      allowEIO3: true
     });
 
     this.setupMiddleware();
@@ -31,6 +32,7 @@ class SocketService {
 
       // Handle joining a document room
       socket.on('join-document', async (documentId) => {
+        console.log(`Received join-document event from user ${socket.user.username} for document ${documentId}`);
         try {
           await this.handleJoinDocument(socket, documentId);
         } catch (error) {
@@ -118,6 +120,8 @@ class SocketService {
     socket.join(`document-${documentId}`);
     socket.currentDocument = documentId;
 
+    console.log(`User ${socket.user.username} joined room document-${documentId}`);
+
     // Add to active sessions
     await query(`
       INSERT INTO active_sessions (document_id, user_id, socket_id, joined_at, last_ping)
@@ -125,6 +129,11 @@ class SocketService {
       ON CONFLICT (document_id, user_id) 
       DO UPDATE SET socket_id = EXCLUDED.socket_id, joined_at = EXCLUDED.joined_at, last_ping = EXCLUDED.last_ping
     `, [documentId, socket.user.id, socket.id]);
+
+    // Check room size after joining
+    const room = this.io.sockets.adapter.rooms.get(`document-${documentId}`);
+    const roomSize = room ? room.size : 0;
+    console.log(`Room document-${documentId} now has ${roomSize} users`);
 
     // Get current active users
     const activeUsersResult = await query(`
@@ -191,12 +200,13 @@ class SocketService {
   async handleTextChange(socket, data) {
     const { documentId, content, operation } = data;
 
-    console.log(`Text change attempt - User: ${socket.user.username}, Target doc: ${documentId}`);
+    console.log(`Text change attempt - User: ${socket.user.username}, Target doc: ${documentId}, Content length: ${content.length}`);
 
     // Check if user can write to the document
     const canWrite = await canWriteToDocument(socket.user.id, documentId);
 
     if (!canWrite) {
+      console.log(`User ${socket.user.username} denied write access to document ${documentId}`);
       socket.emit('error', { message: 'You do not have permission to edit this document' });
       return;
     }
@@ -209,6 +219,11 @@ class SocketService {
     
     console.log(`Document ${documentId} content updated in database by ${socket.user.username}`);
 
+    // Get the room size to see how many users will receive the broadcast
+    const room = this.io.sockets.adapter.rooms.get(`document-${documentId}`);
+    const roomSize = room ? room.size : 0;
+    console.log(`Broadcasting to ${roomSize} users in document-${documentId} room`);
+
     // Broadcast the change to other users in the document
     socket.to(`document-${documentId}`).emit('text-changed', {
       content,
@@ -220,13 +235,16 @@ class SocketService {
       timestamp: new Date().toISOString()
     });
 
-    console.log(`Text change broadcasted for document ${documentId} by user ${socket.user.username}`);
+    console.log(`Text change broadcasted for document ${documentId} by user ${socket.user.username} to ${roomSize} users`);
   }
 
   async handleCursorMove(socket, data) {
     const { documentId, position } = data;
 
+    console.log(`Cursor move attempt - User: ${socket.user.username}, Doc: ${documentId}, Position: ${position}`);
+
     if (!socket.currentDocument || socket.currentDocument !== documentId) {
+      console.log(`User ${socket.user.username} not in document ${documentId}, current: ${socket.currentDocument}`);
       return;
     }
 
@@ -235,6 +253,11 @@ class SocketService {
       'UPDATE active_sessions SET cursor_position = $1, last_ping = CURRENT_TIMESTAMP WHERE document_id = $2 AND user_id = $3',
       [position, documentId, socket.user.id]
     );
+
+    // Get the room size to see how many users will receive the broadcast
+    const room = this.io.sockets.adapter.rooms.get(`document-${documentId}`);
+    const roomSize = room ? room.size : 0;
+    console.log(`Broadcasting cursor move to ${roomSize} users in document-${documentId} room`);
 
     // Broadcast cursor position to other users
     socket.to(`document-${documentId}`).emit('cursor-moved', {
@@ -245,6 +268,8 @@ class SocketService {
       position,
       timestamp: new Date().toISOString()
     });
+
+    console.log(`Cursor move broadcasted for document ${documentId} by user ${socket.user.username} to ${roomSize} users`);
   }
 
   async handleSaveDocument(socket, data) {

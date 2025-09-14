@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useSocket } from '@/hooks/useSocket';
-import { Document, TextChangeEvent } from '@/types';
+import { Document, TextChangeEvent, CursorMoveEvent } from '@/types';
 import toast from 'react-hot-toast';
+import CursorOverlay from './CursorOverlay';
+import ActiveUsersDebug from './ActiveUsersDebug';
 
 interface DocumentEditorProps {
   document: Document;
@@ -17,8 +19,11 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isDocumentJoined, setIsDocumentJoined] = useState(false);
   const [canWrite, setCanWrite] = useState(document.canWrite ?? true);
+  const [isReceivingRemoteChange, setIsReceivingRemoteChange] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cursorMoveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasJoinedDocumentRef = useRef(false);
 
   const {
     isConnected,
@@ -26,6 +31,7 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
     joinDocument,
     leaveDocument,
     sendTextChange,
+    sendCursorMove,
     saveDocument,
   } = useSocket({
     onDocumentJoined: (data) => {
@@ -37,14 +43,34 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
     },
     onTextChanged: (data: TextChangeEvent) => {
       // Update content from other users
+      console.log('Received text change from:', data.user.username, 'Content length:', data.content.length);
+      setIsReceivingRemoteChange(true);
       setContent(data.content);
       onContentChange?.(data.content);
+      
+      // Show visual feedback for incoming changes
+      toast(`${data.user.username} made changes`, { 
+        icon: '✏️',
+        duration: 2000 
+      });
+      
+      // Reset flag after a short delay
+      setTimeout(() => setIsReceivingRemoteChange(false), 100);
     },
     onUserJoined: (data) => {
       toast.success(`${data.user.username} joined the document`);
     },
     onUserLeft: (data) => {
       toast(`${data.user.username} left the document`, { icon: '👋' });
+    },
+    onCursorMoved: (data: CursorMoveEvent) => {
+      // Handle cursor move from other users
+      console.log('DocumentEditor: Cursor moved by:', data.user.username, 'Position:', data.position);
+      if ((window as any).__onCursorMoved) {
+        (window as any).__onCursorMoved(data);
+      } else {
+        console.warn('DocumentEditor: __onCursorMoved handler not found');
+      }
     },
     onSaveComplete: (data) => {
       setLastSaved(new Date());
@@ -58,23 +84,48 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
 
   // Join document on mount
   useEffect(() => {
-    if (document.id) {
-      console.log('Attempting to join document:', document.id);
+    if (document.id && isConnected && !hasJoinedDocumentRef.current) {
+      console.log('Attempting to join document:', document.id, 'Socket connected:', isConnected);
+      hasJoinedDocumentRef.current = true;
       joinDocument(document.id);
+    } else if (document.id && !isConnected) {
+      console.log('Cannot join document - socket not connected. Document ID:', document.id, 'Connected:', isConnected);
     }
 
     return () => {
-      if (document.id) {
+      if (document.id && hasJoinedDocumentRef.current) {
         console.log('Leaving document:', document.id);
+        hasJoinedDocumentRef.current = false;
         leaveDocument(document.id);
       }
     };
-  }, [document.id]);
+  }, [document.id, isConnected]); // Removed joinDocument and leaveDocument from dependencies
+
+  // Set up global cursor move handler
+  useEffect(() => {
+    (window as any).__sendCursorMove = (position: number) => {
+      if (isConnected) {
+        console.log('DocumentEditor: Sending cursor move, position:', position);
+        sendCursorMove(document.id, position);
+      } else {
+        console.log('DocumentEditor: Not sending cursor move - not connected');
+      }
+    };
+
+    return () => {
+      delete (window as any).__sendCursorMove;
+    };
+  }, [isConnected, document.id, sendCursorMove]);
 
   // Handle content changes
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!canWrite) {
       toast.error('You have read-only access to this document');
+      return;
+    }
+
+    // Don't send changes if we're receiving a remote change
+    if (isReceivingRemoteChange) {
       return;
     }
 
@@ -100,6 +151,24 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
     }, 500);
   };
 
+  // Handle cursor movement
+  const handleCursorMove = () => {
+    if (!textareaRef.current || !isConnected) return;
+
+    const position = textareaRef.current.selectionStart;
+    console.log('DocumentEditor: Local cursor moved to position:', position);
+    
+    // Throttle cursor updates (max 10 per second)
+    if (cursorMoveTimeoutRef.current) {
+      clearTimeout(cursorMoveTimeoutRef.current);
+    }
+    
+    cursorMoveTimeoutRef.current = setTimeout(() => {
+      console.log('DocumentEditor: Sending throttled cursor move, position:', position);
+      sendCursorMove(document.id, position);
+    }, 100);
+  };
+
   // Handle manual save
   const handleSave = () => {
     if (isConnected && document.isOwner) {
@@ -112,13 +181,6 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
     }
   };
 
-  // Handle cursor position updates
-  const handleCursorMove = () => {
-    if (textareaRef.current && isConnected) {
-      const position = textareaRef.current.selectionStart;
-      // sendCursorMove(document.id, position); // Uncomment if you want to show cursor positions
-    }
-  };
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -205,13 +267,22 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
 
       {/* Editor */}
       <div className="flex-1 flex">
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col relative">
+          <CursorOverlay
+            textareaRef={textareaRef}
+            onCursorMoved={(data) => {
+              // Handle cursor move from other users
+              console.log('Cursor moved by:', data.user.username, 'Position:', data.position);
+            }}
+            activeUsers={activeUsers}
+          />
           <textarea
             ref={textareaRef}
             value={content}
             onChange={handleContentChange}
             onSelect={handleCursorMove}
             onKeyUp={handleCursorMove}
+            onMouseUp={handleCursorMove}
             readOnly={!canWrite}
             className={`flex-1 w-full p-6 text-white bg-gray-800 placeholder-gray-400 border-none resize-none focus:outline-none font-mono text-sm leading-6 ${
               !canWrite ? 'cursor-not-allowed opacity-75' : ''
@@ -262,6 +333,13 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
           </div>
         </div>
       </div>
+
+      {/* Debug component */}
+      <ActiveUsersDebug 
+        activeUsers={activeUsers}
+        isConnected={isConnected}
+        currentDocumentId={document.id}
+      />
     </div>
   );
 };

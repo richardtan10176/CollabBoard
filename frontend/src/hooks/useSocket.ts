@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import Cookies from 'js-cookie';
 import {
@@ -47,6 +47,7 @@ export const useSocket = ({
   const [isConnected, setIsConnected] = useState(false);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
   const socketRef = useRef<Socket | null>(null);
+  const pendingDocumentIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const token = Cookies.get('token');
@@ -65,10 +66,12 @@ export const useSocket = ({
       auth: {
         token,
       },
-      transports: ['polling'],
+      transports: ['polling', 'websocket'],
       path: '/socket.io/',
       timeout: 20000,
-      reconnection: false,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
       autoConnect: true,
     });
 
@@ -77,12 +80,19 @@ export const useSocket = ({
 
     // Connection event handlers
     newSocket.on('connect', () => {
-      console.log('Connected to server');
+      console.log('Socket connected to server with ID:', newSocket.id);
       setIsConnected(true);
+      
+      // If there's a pending document to join, join it now
+      if (pendingDocumentIdRef.current) {
+        console.log('Auto-joining pending document:', pendingDocumentIdRef.current);
+        newSocket.emit('join-document', pendingDocumentIdRef.current);
+        pendingDocumentIdRef.current = null;
+      }
     });
 
-    newSocket.on('disconnect', () => {
-      console.log('Disconnected from server');
+    newSocket.on('disconnect', (reason) => {
+      console.log('Socket disconnected from server. Reason:', reason);
       setIsConnected(false);
       setActiveUsers([]);
     });
@@ -90,6 +100,15 @@ export const useSocket = ({
     newSocket.on('connect_error', (error) => {
       console.error('Socket connection error:', error);
       setIsConnected(false);
+    });
+
+    newSocket.on('reconnect', (attemptNumber) => {
+      console.log('Socket reconnected after', attemptNumber, 'attempts');
+      setIsConnected(true);
+    });
+
+    newSocket.on('reconnect_error', (error) => {
+      console.error('Socket reconnection error:', error);
     });
 
     // Document collaboration event handlers
@@ -120,6 +139,11 @@ export const useSocket = ({
       onUserLeft?.(data);
     });
 
+    newSocket.on('cursor-moved', (data: CursorMoveEvent) => {
+      console.log('Cursor moved:', data);
+      onCursorMoved?.(data);
+    });
+
     newSocket.on('save-complete', (data: SaveCompleteEvent) => {
       console.log('Save complete:', data);
       onSaveComplete?.(data);
@@ -142,21 +166,29 @@ export const useSocket = ({
     };
   }, []);
 
-  const joinDocument = (documentId: string) => {
+  const joinDocument = useCallback((documentId: string) => {
     if (socket && isConnected) {
-      console.log('Joining document:', documentId);
+      console.log('Joining document:', documentId, 'Socket ID:', socket.id);
       socket.emit('join-document', documentId);
+    } else {
+      console.warn('Cannot join document - socket not ready, storing for later:', { 
+        hasSocket: !!socket, 
+        isConnected, 
+        documentId 
+      });
+      // Store the document ID to join when socket connects
+      pendingDocumentIdRef.current = documentId;
     }
-  };
+  }, [socket, isConnected]);
 
-  const leaveDocument = (documentId: string) => {
+  const leaveDocument = useCallback((documentId: string) => {
     if (socket && isConnected) {
       console.log('Leaving document:', documentId);
       socket.emit('leave-document', documentId);
     }
-  };
+  }, [socket, isConnected]);
 
-  const sendTextChange = (documentId: string, content: string, operation?: any) => {
+  const sendTextChange = useCallback((documentId: string, content: string, operation?: any) => {
     if (socket && isConnected) {
       socket.emit('text-change', {
         documentId,
@@ -164,25 +196,25 @@ export const useSocket = ({
         operation,
       });
     }
-  };
+  }, [socket, isConnected]);
 
-  const sendCursorMove = (documentId: string, position: number) => {
+  const sendCursorMove = useCallback((documentId: string, position: number) => {
     if (socket && isConnected) {
       socket.emit('cursor-move', {
         documentId,
         position,
       });
     }
-  };
+  }, [socket, isConnected]);
 
-  const saveDocument = (documentId: string, content: string) => {
+  const saveDocument = useCallback((documentId: string, content: string) => {
     if (socket && isConnected) {
       socket.emit('save-document', {
         documentId,
         content,
       });
     }
-  };
+  }, [socket, isConnected]);
 
   return {
     socket,
