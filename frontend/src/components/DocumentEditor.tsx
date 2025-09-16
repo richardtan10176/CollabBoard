@@ -177,15 +177,15 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex-shrink-0 border-b border-gray-700 bg-gray-900 px-6 py-4">
+      <div className="flex-shrink-0 backdrop-blur-md bg-slate-900/50 border-b border-slate-700/50 px-6 py-4">
         <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center space-x-4">
+          <div className="flex-1">
+            <div className="flex items-center space-x-4 mb-3">
               <h1 className="text-2xl font-bold text-white">{document.title}</h1>
               {document.isOwner && onShareClick && (
                 <button
                   onClick={onShareClick}
-                  className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/20 hover:border-white/30 rounded-xl transition-all duration-200 font-medium"
                   title="Share document"
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,26 +195,28 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
                 </button>
               )}
             </div>
-            <div className="flex items-center space-x-4 mt-2">
+            <div className="flex items-center space-x-6">
               <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                <span className="text-sm text-gray-300">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-400' : 'bg-red-400'} ${isConnected ? 'animate-pulse' : ''}`}></div>
+                <span className="text-sm text-slate-300 font-medium">
                   {isConnected ? 'Connected' : 'Disconnected'}
                 </span>
               </div>
               
               {lastSaved && (
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-slate-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10">
                   Last saved: {lastSaved.toLocaleTimeString()}
                 </span>
               )}
               
               {isSaving && (
-                <span className="text-sm text-blue-600">Saving...</span>
+                <span className="text-sm text-blue-400 bg-blue-500/10 px-3 py-1 rounded-lg border border-blue-500/20">
+                  Saving...
+                </span>
               )}
               
               {!canWrite && (
-                <span className="text-sm text-orange-500 font-medium">
+                <span className="text-sm text-orange-400 bg-orange-500/10 px-3 py-1 rounded-lg border border-orange-500/20 font-medium">
                   Read-only mode
                 </span>
               )}
@@ -223,27 +225,25 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
 
           <div className="flex items-center space-x-4">
             {/* Active users */}
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-300">Active users:</span>
+            <div className="flex items-center space-x-3">
+              <span className="text-sm text-slate-300 font-medium">Active users:</span>
               <div className="flex -space-x-2">
                 {activeUsers.slice(0, 5).map((user) => (
                   <div
                     key={user.id}
-                    className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xs font-medium border-2 border-white"
+                    className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold border-2 border-white/20 shadow-lg"
                     title={user.username}
                   >
                     {user.username.charAt(0).toUpperCase()}
                   </div>
                 ))}
                 {activeUsers.length > 5 && (
-                  <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white text-xs font-medium border-2 border-white">
+                  <div className="w-8 h-8 bg-gradient-to-br from-slate-500 to-slate-600 rounded-full flex items-center justify-center text-white text-xs font-semibold border-2 border-white/20 shadow-lg">
                     +{activeUsers.length - 5}
                   </div>
                 )}
               </div>
             </div>
-
-
           </div>
         </div>
       </div>
@@ -267,7 +267,7 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
             onKeyUp={handleCursorMove}
             onMouseUp={handleCursorMove}
             readOnly={!canWrite}
-            className={`flex-1 w-full p-6 text-white bg-gray-800 placeholder-gray-400 border-none resize-none focus:outline-none font-mono text-sm leading-6 ${
+            className={`flex-1 w-full p-8 text-white bg-transparent placeholder-slate-400 border-none resize-none focus:outline-none font-mono text-base leading-7 ${
               !canWrite ? 'cursor-not-allowed opacity-75' : ''
             }`}
             placeholder={canWrite ? "Start writing your markdown here..." : "You have read-only access to this document"}
@@ -276,22 +276,25 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
         </div>
 
         {/* Preview panel - could be enhanced later */}
-        <div className="hidden lg:block w-1/2 border-l border-gray-700 bg-gray-900">
-          <div className="p-6">
-            <h3 className="text-lg font-medium text-white mb-4">Preview</h3>
+        <div className="hidden lg:block w-1/2 border-l border-slate-700/50 bg-white/5 backdrop-blur-sm">
+          <div className="p-8">
+            <div className="flex items-center space-x-2 mb-6">
+              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              <h3 className="text-lg font-semibold text-white">Preview</h3>
+            </div>
             <div className="prose prose-sm max-w-none prose-invert">
               <div 
-                className="text-sm text-gray-300"
+                className="text-sm text-slate-300 leading-relaxed"
                 dangerouslySetInnerHTML={{
                   __html: content
-                    .replace(/^# (.*$)/gim, '<h1 class="text-xl font-bold mb-2">$1</h1>')
-                    .replace(/^## (.*$)/gim, '<h2 class="text-lg font-semibold mb-2">$1</h2>')
-                    .replace(/^### (.*$)/gim, '<h3 class="text-md font-medium mb-1">$1</h3>')
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                    .replace(/`(.*?)`/g, '<code class="bg-gray-700 px-1 rounded">$1</code>')
+                    .replace(/^# (.*$)/gim, '<h1 class="text-xl font-bold mb-2 text-white">$1</h1>')
+                    .replace(/^## (.*$)/gim, '<h2 class="text-lg font-semibold mb-2 text-white">$1</h2>')
+                    .replace(/^### (.*$)/gim, '<h3 class="text-md font-medium mb-1 text-white">$1</h3>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em class="text-slate-200">$1</em>')
+                    .replace(/`(.*?)`/g, '<code class="bg-white/10 text-blue-300 px-2 py-1 rounded border border-white/20">$1</code>')
                     .replace(/\n/g, '<br>')
-                    || 'Nothing to preview yet...'
+                    || '<span class="text-slate-400 italic">Nothing to preview yet...</span>'
                 }}
               />
             </div>
@@ -300,19 +303,29 @@ const DocumentEditor: React.FC<DocumentEditorProps> = ({ document, onContentChan
       </div>
 
       {/* Status bar */}
-      <div className="flex-shrink-0 border-t border-gray-700 bg-gray-900 px-6 py-2">
-        <div className="flex items-center justify-between text-sm text-gray-300">
-          <div className="flex items-center space-x-4">
-            <span>Characters: {content.length}</span>
-            <span>Words: {content.trim() ? content.trim().split(/\s+/).length : 0}</span>
-            <span>Lines: {content.split('\n').length}</span>
+      <div className="flex-shrink-0 border-t border-slate-700/50 bg-white/5 backdrop-blur-sm px-6 py-3">
+        <div className="flex items-center justify-between text-sm text-slate-300">
+          <div className="flex items-center space-x-6">
+            <span className="bg-white/5 px-3 py-1 rounded-lg border border-white/10">
+              Characters: {content.length}
+            </span>
+            <span className="bg-white/5 px-3 py-1 rounded-lg border border-white/10">
+              Words: {content.trim() ? content.trim().split(/\s+/).length : 0}
+            </span>
+            <span className="bg-white/5 px-3 py-1 rounded-lg border border-white/10">
+              Lines: {content.split('\n').length}
+            </span>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
             {!document.isOwner && (
-              <span className="text-yellow-600">Read-only mode</span>
+              <span className="text-orange-400 bg-orange-500/10 px-3 py-1 rounded-lg border border-orange-500/20 font-medium">
+                Read-only mode
+              </span>
             )}
-            <span>Owner: {document.owner_username}</span>
+            <span className="bg-white/5 px-3 py-1 rounded-lg border border-white/10">
+              Owner: {document.owner_username}
+            </span>
           </div>
         </div>
       </div>

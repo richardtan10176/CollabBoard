@@ -87,10 +87,13 @@ export default function EditorPage() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-300">Loading...</p>
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-600 border-t-blue-500 mx-auto"></div>
+            <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-r-blue-400 animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+          </div>
+          <p className="mt-6 text-slate-300 text-lg font-light">Loading...</p>
         </div>
       </div>
     );
@@ -98,10 +101,13 @@ export default function EditorPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-300">Loading document...</p>
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-600 border-t-blue-500 mx-auto"></div>
+            <div className="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-r-blue-400 animate-spin" style={{animationDirection: 'reverse', animationDuration: '1.5s'}}></div>
+          </div>
+          <p className="mt-6 text-slate-300 text-lg font-light">Loading document...</p>
         </div>
       </div>
     );
@@ -109,46 +115,48 @@ export default function EditorPage() {
 
   if (error || !document) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-red-500/10 border border-red-500/20 rounded-2xl mb-6">
+            <svg className="h-10 w-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h3 className="mt-2 text-sm font-medium text-white">Document not found</h3>
-          <p className="mt-1 text-sm text-gray-400">
+          <h3 className="text-xl font-bold text-white mb-2">Document not found</h3>
+          <p className="text-slate-300 mb-8">
             {error || 'The document you\'re looking for doesn\'t exist or you don\'t have access to it.'}
           </p>
-          <div className="mt-6">
-            <button
-              onClick={handleBackToDashboard}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              <ArrowLeftIcon className="h-5 w-5 mr-2" />
-              Back to Dashboard
-            </button>
-          </div>
+          <button
+            onClick={handleBackToDashboard}
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-2" />
+            Back to Dashboard
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-800 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col">
       {/* Top navigation */}
-      <div className="flex-shrink-0 border-b border-gray-700 bg-gray-900 px-6 py-3">
+      <div className="flex-shrink-0 backdrop-blur-md bg-slate-900/50 border-b border-slate-700/50 px-6 py-4">
         <div className="flex items-center justify-between">
           <button
             onClick={handleBackToDashboard}
-            className="inline-flex items-center px-3 py-2 border border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-200 bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="inline-flex items-center px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/20 hover:border-white/30 rounded-xl transition-all duration-200 font-medium"
           >
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
             Back to Dashboard
           </button>
           
-          <div className="text-sm text-gray-300">
-            Document ID: {document.id}
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-slate-400 bg-white/5 px-3 py-1 rounded-lg border border-white/10">
+              ID: {document.id}
+            </div>
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-sm text-slate-300">Connected</span>
           </div>
         </div>
       </div>
