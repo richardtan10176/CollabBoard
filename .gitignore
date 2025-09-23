@@ -40,3 +40,4 @@ dist/
 # Temporary files
 *.tmp
 *.bak
+/COLLABBOARD_REFERENCE.md

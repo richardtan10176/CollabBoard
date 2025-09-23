@@ -1,6 +1,7 @@
 const { Server } = require('socket.io');
 const { authenticateSocket } = require('../middleware/auth');
 const { query } = require('../utils/database');
+const { checkDocumentPermission, canWriteToDocument } = require('../utils/permissions');
 
 class SocketService {
   constructor(server) {
@@ -10,9 +11,10 @@ class SocketService {
         methods: ["GET", "POST"],
         credentials: true
       },
-      transports: ['polling'],
+      transports: ['polling', 'websocket'],
       pingTimeout: 20000,
-      pingInterval: 10000
+      pingInterval: 10000,
+      allowEIO3: true
     });
 
     this.setupMiddleware();
@@ -26,7 +28,6 @@ class SocketService {
 
   setupEventHandlers() {
     this.io.on('connection', (socket) => {
-      console.log(`User ${socket.user.username} connected with socket ID: ${socket.id}`);
 
       // Handle joining a document room
       socket.on('join-document', async (documentId) => {
@@ -88,18 +89,24 @@ class SocketService {
   }
 
   async handleJoinDocument(socket, documentId) {
-    console.log(`Join document request - User: ${socket.user.username}, Doc: ${documentId}`);
-    
-    // Verify user has access to the document
+    // Check if user has access to the document
+    const { hasAccess, permission } = await checkDocumentPermission(socket.user.id, documentId);
+
+    if (!hasAccess) {
+      socket.emit('error', { message: 'Document not found or access denied' });
+      return;
+    }
+
+    // Get document details
     const documentResult = await query(`
       SELECT d.*, u.username as owner_username
       FROM documents d
       JOIN users u ON d.owner_id = u.id
-      WHERE d.id = $1 AND (d.owner_id = $2 OR d.is_public = true)
-    `, [documentId, socket.user.id]);
+      WHERE d.id = $1
+    `, [documentId]);
 
     if (documentResult.rows.length === 0) {
-      socket.emit('error', { message: 'Document not found or access denied' });
+      socket.emit('error', { message: 'Document not found' });
       return;
     }
 
@@ -146,11 +153,10 @@ class SocketService {
         },
         isOwner: document.owner_id === socket.user.id
       },
-      activeUsers: activeUsersResult.rows
+      activeUsers: activeUsersResult.rows,
+      userPermission: permission,
+      canWrite: permission === 'owner' || permission === 'write'
     });
-
-    console.log(`User ${socket.user.username} successfully joined document ${documentId}`);
-    console.log('Sent document-joined event with data:', { documentId, activeUsersCount: activeUsersResult.rows.length });
   }
 
   async handleLeaveDocument(socket, documentId) {
@@ -173,25 +179,17 @@ class SocketService {
         leftAt: new Date().toISOString()
       });
 
-      console.log(`User ${socket.user.username} left document ${documentId}`);
     }
   }
 
   async handleTextChange(socket, data) {
     const { documentId, content, operation } = data;
 
-    console.log(`Text change attempt - User: ${socket.user.username}, Target doc: ${documentId}`);
+    // Check if user can write to the document
+    const canWrite = await canWriteToDocument(socket.user.id, documentId);
 
-    // Verify user has access to the document
-    const documentResult = await query(`
-      SELECT d.*, u.username as owner_username
-      FROM documents d
-      JOIN users u ON d.owner_id = u.id
-      WHERE d.id = $1 AND (d.owner_id = $2 OR d.is_public = true)
-    `, [documentId, socket.user.id]);
-
-    if (documentResult.rows.length === 0) {
-      socket.emit('error', { message: 'Document not found or access denied' });
+    if (!canWrite) {
+      socket.emit('error', { message: 'You do not have permission to edit this document' });
       return;
     }
 
@@ -200,8 +198,6 @@ class SocketService {
       'UPDATE documents SET current_content = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [content, documentId]
     );
-    
-    console.log(`Document ${documentId} content updated in database by ${socket.user.username}`);
 
     // Broadcast the change to other users in the document
     socket.to(`document-${documentId}`).emit('text-changed', {
@@ -213,8 +209,6 @@ class SocketService {
       },
       timestamp: new Date().toISOString()
     });
-
-    console.log(`Text change broadcasted for document ${documentId} by user ${socket.user.username}`);
   }
 
   async handleCursorMove(socket, data) {
@@ -244,16 +238,12 @@ class SocketService {
   async handleSaveDocument(socket, data) {
     const { documentId, content } = data;
 
-    console.log(`Save document attempt - User: ${socket.user.username}, Doc: ${documentId}`);
 
-    // Verify user has permission to save (is owner for now)
-    const documentResult = await query(
-      'SELECT owner_id FROM documents WHERE id = $1',
-      [documentId]
-    );
+    // Check if user can write to the document
+    const canWrite = await canWriteToDocument(socket.user.id, documentId);
 
-    if (documentResult.rows.length === 0 || documentResult.rows[0].owner_id !== socket.user.id) {
-      socket.emit('error', { message: 'Permission denied' });
+    if (!canWrite) {
+      socket.emit('error', { message: 'You do not have permission to save this document' });
       return;
     }
 

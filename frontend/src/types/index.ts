@@ -37,6 +37,8 @@ export interface Document {
   owner_username: string;
   version_count?: number;
   isOwner?: boolean;
+  user_permission?: 'owner' | 'write' | 'read';
+  canWrite?: boolean;
 }
 
 export interface DocumentVersion {
@@ -98,6 +100,8 @@ export interface DocumentJoinedEvent {
     };
   };
   activeUsers: ActiveUser[];
+  userPermission?: 'owner' | 'write' | 'read';
+  canWrite?: boolean;
 }
 
 // API Response types
@@ -117,4 +121,35 @@ export interface DocumentResponse {
 
 export interface VersionsResponse {
   versions: DocumentVersion[];
+}
+
+// Sharing types
+export interface DocumentShare {
+  id: string;
+  permission_type: 'read' | 'write';
+  created_at: string;
+  expires_at?: string;
+  shared_with_user_id: string;
+  shared_with_username: string;
+  shared_with_email: string;
+  shared_by_username: string;
+}
+
+export interface ShareRequest {
+  username: string;
+  permission: 'read' | 'write';
+}
+
+export interface UserSearchResult {
+  id: string;
+  username: string;
+  email: string;
+}
+
+export interface SharesResponse {
+  shares: DocumentShare[];
+}
+
+export interface UsersSearchResponse {
+  users: UserSearchResult[];
 }

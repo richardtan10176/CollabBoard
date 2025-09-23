@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: collabboard
-      POSTGRES_USER: collabboard
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
@@ -17,7 +17,7 @@ services:
     networks:
       - collabboard-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U collabboard -d collabboard"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d collabboard"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -37,7 +37,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: collabboard
-      DB_USER: collabboard
+      DB_USER: postgres
       DB_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 24h

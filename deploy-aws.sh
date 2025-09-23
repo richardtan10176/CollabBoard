@@ -151,6 +151,14 @@ deploy_app() {
     print_status "Waiting for services to start..."
     sleep 30
     
+    # Verify database initialization
+    if [ -f "scripts/verify-db.sh" ]; then
+        print_status "Verifying database initialization..."
+        sudo ./scripts/verify-db.sh
+    else
+        print_warning "Database verification script not found"
+    fi
+    
     # Check service status
     sudo docker-compose -f docker-compose.prod.yml ps
     

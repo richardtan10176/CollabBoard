@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   output: 'standalone',
+  // Optimize for low-memory builds
+  swcMinify: true,
+  compress: true,
   env: {
     API_URL: process.env.API_URL || 'https://localhost:3001',
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://localhost:3001',
@@ -16,10 +19,8 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // For development with self-signed certificates
-  experimental: {
-    serverComponentsExternalPackages: ['socket.io-client'],
-  },
+  // External packages for server components
+  serverExternalPackages: ['socket.io-client'],
 };
 
 export default nextConfig;

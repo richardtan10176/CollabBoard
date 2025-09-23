@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 // Import routes and services
 const authRoutes = require('./src/routes/auth');
 const documentRoutes = require('./src/routes/documents');
+const sharingRoutes = require('./src/routes/sharing');
 const SocketService = require('./src/services/socketService');
 
 const app = express();
@@ -54,6 +55,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/sharing', sharingRoutes);
 
 // Default route
 app.get('/', (req, res) => {

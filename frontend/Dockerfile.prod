@@ -1,0 +1,28 @@
+# Production Dockerfile for pre-built frontend
+FROM node:20-alpine AS runner
+WORKDIR /app
+
+# Install wget for health checks
+RUN apk add --no-cache wget
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy pre-built application
+COPY .next/standalone ./
+COPY .next/static ./.next/static
+COPY public ./public
+
+# Set the correct permission for prerender cache
+RUN chown -R nextjs:nodejs .next
+
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT=3000
+
+# server.js is created by next build from the standalone output
+CMD ["node", "server.js"]
