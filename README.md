@@ -2,27 +2,7 @@
 
 Real-time collaborative markdown editor with user authentication and version history.
 ### CollabBoard is now LIVE!!! Check it out [here](https://collabboard.xyz)
-## Quick Start
 
-```bash
-git clone <repository-url>
-cd CollabBoard
-docker-compose up --build
-```
-
-Access at https://localhost (accept self-signed certificate)
-
-**Default login:**
-- Username: `admin`
-- Password: `admin123`
-
-## Production
-
-```bash
-cp env.example .env
-# Edit .env with your values
-docker-compose -f docker-compose.prod.yml up --build -d
-```
 
 ## Architecture
 
@@ -31,3 +11,4 @@ docker-compose -f docker-compose.prod.yml up --build -d
 - **Database:** PostgreSQL
 
 - **Proxy:** NGINX with HTTPS
+
