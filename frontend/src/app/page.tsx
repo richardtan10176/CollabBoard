@@ -152,29 +152,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-700/50 mt-32">
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-3 mb-4 md:mb-0">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
-                <DocumentTextIcon className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-lg font-semibold text-white">CollabBoard</span>
-            </div>
-            <div className="flex items-center space-x-8">
-              <p className="text-slate-400 text-sm">
-                © 2024 CollabBoard. All rights reserved.
-              </p>
-              <div className="flex items-center space-x-4">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-slate-400 text-sm">All systems operational</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
