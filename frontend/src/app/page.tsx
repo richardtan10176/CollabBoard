@@ -68,18 +68,10 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-6xl mx-auto px-6 py-32">
         <div className="text-center">
-          <div className="mb-8">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-300 text-sm font-medium mb-8">
-              <div className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></div>
-              Real-time collaboration platform
-            </div>
-          </div>
           <h1 className="text-6xl md:text-8xl font-bold text-white mb-8 leading-tight">
             Collaborate on
             <br />
-            <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent animate-pulse">
-              Markdown
-            </span>
+            Markdown
           </h1>
           <p className="text-xl text-slate-300 mb-16 max-w-3xl mx-auto font-light leading-relaxed">
             The most intuitive real-time collaborative markdown editor. 
